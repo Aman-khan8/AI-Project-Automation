@@ -57,22 +57,22 @@ function LandingPage() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative overflow-hidden gradient-bg py-24 px-4">
+      <section className="relative overflow-hidden gradient-bg py-12 px-2">
         {/* Decorative blobs */}
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 left-1/4 w-72 h-72 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 right-1/4 w-72 h-72 bg-purple-600/20 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-sm font-medium px-4 py-1.5 rounded-full mb-6">
+        <div className="relative max-w-3xl mx-auto text-center">
+          <div className="inline-flex items-center gap-1 bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-medium px-3 py-1 rounded-full mb-3">
             <span>✨</span> Powered by Advanced AI
           </div>
 
-          <h1 className="text-5xl sm:text-6xl font-extrabold text-white leading-tight mb-6">
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-white leading-tight mb-3">
             Automate Your Tasks with{' '}
             <span className="gradient-text">AI Intelligence</span>
           </h1>
 
-          <p className="text-xl text-slate-300 max-w-2xl mx-auto mb-10">
+          <p className="text-base text-slate-300 max-w-xl mx-auto mb-5">
             Stop managing tasks manually. Let AI understand your goals, break them into steps,
             and automate the entire workflow — so you can focus on what truly matters.
           </p>

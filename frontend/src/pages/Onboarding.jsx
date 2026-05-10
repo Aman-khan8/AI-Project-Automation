@@ -1,3 +1,4 @@
+import axios from 'axios'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -150,7 +151,32 @@ function Step1Name({ data, onChange, onNext, onBack }) {
             className="w-full bg-slate-800/60 border border-slate-600/50 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
           />
         </div>
+         <div>
+          <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
+          <input
+            type="password"
+            value={data.password}
+            onChange={(e) => onChange('password', e.target.value)}
+            placeholder="*********"
+            autoFocus
+            className="w-full bg-slate-800/60 border border-slate-600/50 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+          />
+        </div>
+
+<div>
+          <label className="block text-sm font-medium text-slate-300 mb-1.5">Confirm Password</label>
+          <input
+            type="password"
+            value={data.confirmPassword}
+            onChange={(e) => onChange('confirmPassword', e.target.value)}
+            placeholder="*********"
+            autoFocus
+            className="w-full bg-slate-800/60 border border-slate-600/50 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+          />
+        </div>
+        
       </div>
+
 
       <div className="flex gap-3">
         <button onClick={onBack} className="px-5 py-3 bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/50 text-slate-300 font-semibold rounded-xl transition-colors text-sm">
@@ -400,6 +426,19 @@ export default function Onboarding() {
   const set = (key, val) => setData((d) => ({ ...d, [key]: val }))
   const next = () => setStep((s) => s + 1)
   const back = () => setStep((s) => s - 1)
+ const  onGoToDashboard=async() => {
+  try{
+  const sendData=await axios.post(`${import.meta.env.VITE_API_URL}/auth/signup`, data);
+  if(sendData.status===201){
+    console.log("Setup data sent successfully");
+      navigate('/dashboard')
+  }
+  else{
+    console.error("Failed to send setup data");
+  }
+}catch(err){
+  console.error("Error sending setup data:", err);
+}}
 
   const isComplete = step === TOTAL_STEPS
 
@@ -429,7 +468,7 @@ export default function Onboarding() {
           {step === 2 && <Step2Role data={data} onChange={set} onNext={next} onBack={back} />}
           {step === 3 && <Step3Goals data={data} onChange={set} onNext={next} onBack={back} />}
           {step === 4 && !isComplete && <Step4WorkStyle data={data} onChange={set} onNext={next} onBack={back} />}
-          {isComplete && <StepComplete data={data} onGoToDashboard={() => navigate('/dashboard')} />}
+          {isComplete && <StepComplete data={data} onGoToDashboard={onGoToDashboard} />}
         </div>
 
         {/* Step counter */}

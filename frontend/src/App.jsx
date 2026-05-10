@@ -7,6 +7,8 @@ import AiChat from './pages/AiChat'
 import CalendarView from './pages/CalendarView'
 import Settings from './pages/Settings'
 import Onboarding from './pages/Onboarding'
+import Login from '../src/pages/Login.jsx'
+
 
 // Onboarding has its own full-screen layout — no Navbar
 function AppShell() {
@@ -24,6 +26,8 @@ function AppShell() {
         <Route path="/calendar" element={<CalendarView />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/login" element={<Login />} />
+       
       </Routes>
     </div>
   )
