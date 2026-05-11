@@ -2,12 +2,8 @@ import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
-    username: {
-      type: String,
-      required: true,
-      unique: true,
-    },
-    fullname: {
+    
+    name: {
       type: String,
       required: true,
     },
@@ -20,8 +16,14 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    Role:{
+    role:{
         type:String,
+},
+goals:{
+  type:Array,
+},
+workStyle:{
+  type:String,
 }
   },
   {

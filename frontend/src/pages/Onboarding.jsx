@@ -32,6 +32,7 @@ const WORK_STYLES = [
   { id: 'flexible',   icon: '🌊', label: 'Flexible Flow',  desc: 'Work when inspiration strikes' },
 ]
 
+
 // ─── Reusable pieces ──────────────────────────────────────────────────────────
 
 function StepIndicator({ current, total }) {
@@ -421,6 +422,8 @@ export default function Onboarding() {
     role: '',
     goals: [],
     workStyle: '',
+    password:"",
+    confirmPassword:"",
   })
 
   const set = (key, val) => setData((d) => ({ ...d, [key]: val }))
@@ -428,16 +431,18 @@ export default function Onboarding() {
   const back = () => setStep((s) => s - 1)
  const  onGoToDashboard=async() => {
   try{
+ delete data.confirmPassword;
+    console.log(data);
   const sendData=await axios.post(`${import.meta.env.VITE_API_URL}/auth/signup`, data);
   if(sendData.status===201){
-    console.log("Setup data sent successfully");
+    console.log("Signup data sent successfully");
       navigate('/dashboard')
   }
   else{
-    console.error("Failed to send setup data");
+    console.error("Failed to send signup data");
   }
 }catch(err){
-  console.error("Error sending setup data:", err);
+  console.error("Error sending signup data:", err.message);
 }}
 
   const isComplete = step === TOTAL_STEPS

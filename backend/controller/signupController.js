@@ -5,7 +5,8 @@ import ApiResponse from "../utils/apiResponse.js";
  
 const signUp = async (req, res) => {
   try {
-    const { fullname, username, email, password, role } = req.body;
+    console.log(req.body);
+    const { name, email, password, role, goals, workStyle } = req.body;
 
     const alreadyExit = await User.findOne({ email });
     if (alreadyExit) {
@@ -17,19 +18,21 @@ const signUp = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    console
     const newUser = await User.create({
-      fullname,
-      username,
+      name,
       email,
       password: hashedPassword,
-      role
+      role,
+      goals,
+      workStyle
     });
 
     // Strip password before sending
     const userResponse = newUser.toObject();
     delete userResponse.password;
 
-    const token = jwt.sign({ id: userResponse._id }, process.env.JWT_Scret, {
+    const token = jwt.sign({ id: userResponse._id }, process.env.JWT_SECRET, {
       expiresIn: "3d",
     });
 
@@ -42,7 +45,7 @@ const signUp = async (req, res) => {
   } catch (error) {
     return res
       .status(500)
-      .json(new ApiResponse(500, "error", "Signup Failed", null));
+      .json(new ApiResponse(500, "error", "Signup Failed", error));
   }
 };
 
