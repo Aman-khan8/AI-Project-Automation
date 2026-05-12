@@ -21,7 +21,7 @@ const login = async (req, res) => {
         .json(new ApiResponse(400, "error", "Invalid Credentials", null));
     }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_Scret, {
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "3d",
     });
 
