@@ -35,10 +35,10 @@ const login = async (req, res) => {
       }),
     );
   } catch (err) {
-    console.error("Login Error:", err);
+
     return res
       .status(500)
-      .json(new ApiResponse(500, "error", "Login Failed", null));
+      .json(new ApiResponse(500, "error", "Login Failed", err));
   }
 };
 
