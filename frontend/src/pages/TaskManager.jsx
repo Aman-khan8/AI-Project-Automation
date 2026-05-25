@@ -1,4 +1,6 @@
-import { useState } from 'react'
+import { useState } from 'react';
+import TaskModal from '../components/TaskModal';
+import KanbanColumn from '../components/KanbanColumn';
 
 const INITIAL_TASKS = [
   { id: 1, name: 'Prepare Q4 financial report', description: 'Compile all quarterly data and create executive summary slides.', priority: 'High', dueDate: '2024-02-15', status: 'in-progress' },
@@ -19,11 +21,12 @@ const PRIORITY_COLORS = {
   Low: 'bg-green-500/20 text-green-400 border border-green-500/30',
 }
 
+
 const STATUS_COLORS = {
   pending: 'bg-slate-500/20 text-slate-400 border border-slate-500/30',
   'in-progress': 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
   completed: 'bg-green-500/20 text-green-400 border border-green-500/30',
-}
+};
 
 const STATUS_LABELS = {
   pending: '⏳ Pending',
@@ -31,199 +34,7 @@ const STATUS_LABELS = {
   completed: '✅ Completed',
 }
 
-const EMPTY_FORM = { name: '', description: '', priority: 'Medium', dueDate: '', status: 'pending' }
 
-function ModalInner({ onClose, onSave, editingTask }) {
-  const [form, setForm] = useState(editingTask || EMPTY_FORM)
-
-  const handleChange = (e) => {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
-  }
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    if (!form.name.trim()) return
-    onSave(form)
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      {/* Modal */}
-      <div className="relative bg-slate-900 border border-slate-700/50 rounded-2xl p-6 w-full max-w-lg shadow-2xl">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-white">
-            {editingTask ? '✏️ Edit Task' : '➕ Add New Task'}
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-white transition-colors text-xl leading-none"
-          >
-            ✕
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">
-              Task Name <span className="text-red-400">*</span>
-            </label>
-            <input
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              placeholder="Enter task name..."
-              required
-              className="w-full bg-slate-800 border border-slate-600/50 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Description</label>
-            <textarea
-              name="description"
-              value={form.description}
-              onChange={handleChange}
-              placeholder="Describe the task..."
-              rows={3}
-              className="w-full bg-slate-800 border border-slate-600/50 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Priority</label>
-              <select
-                name="priority"
-                value={form.priority}
-                onChange={handleChange}
-                className="w-full bg-slate-800 border border-slate-600/50 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
-              >
-                <option value="High">🔴 High</option>
-                <option value="Medium">🟡 Medium</option>
-                <option value="Low">🟢 Low</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Status</label>
-              <select
-                name="status"
-                value={form.status}
-                onChange={handleChange}
-                className="w-full bg-slate-800 border border-slate-600/50 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
-              >
-                <option value="pending">⏳ Pending</option>
-                <option value="in-progress">🔄 In Progress</option>
-                <option value="completed">✅ Completed</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Due Date</label>
-            <input
-              type="date"
-              name="dueDate"
-              value={form.dueDate}
-              onChange={handleChange}
-              className="w-full bg-slate-800 border border-slate-600/50 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all [color-scheme:dark]"
-            />
-          </div>
-
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2.5 bg-slate-700/60 hover:bg-slate-700 border border-slate-600/50 text-slate-300 font-semibold rounded-xl transition-colors text-sm"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="flex-1 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl transition-colors text-sm"
-            >
-              {editingTask ? 'Save Changes' : 'Add Task'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  )
-}
-
-function Modal({ isOpen, onClose, onSave, editingTask }) {
-  if (!isOpen) return null
-  return (
-    <ModalInner
-      key={editingTask ? editingTask.id : 'new'}
-      onClose={onClose}
-      onSave={onSave}
-      editingTask={editingTask}
-    />
-  )
-}
-
-function KanbanColumn({ title, tasks, icon, color, onStatusToggle, onEdit, onDelete }) {
-  return (
-    <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-4 flex flex-col gap-3">
-      <div className={`flex items-center gap-2 mb-2 pb-3 border-b border-slate-700/50`}>
-        <span className="text-lg">{icon}</span>
-        <h3 className={`font-bold text-sm ${color}`}>{title}</h3>
-        <span className="ml-auto bg-slate-700 text-slate-400 text-xs font-bold px-2 py-0.5 rounded-full">
-          {tasks.length}
-        </span>
-      </div>
-      {tasks.length === 0 && (
-        <div className="text-center py-8 text-slate-600 text-sm">No tasks here</div>
-      )}
-      {tasks.map((task) => (
-        <div
-          key={task.id}
-          className="bg-slate-900/60 border border-slate-700/40 rounded-xl p-4 cursor-grab active:cursor-grabbing hover:border-indigo-500/30 transition-colors"
-        >
-          <div className="flex items-start justify-between gap-2 mb-2">
-            <h4 className="text-white text-sm font-semibold leading-snug">{task.name}</h4>
-            <span className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded-full ${PRIORITY_COLORS[task.priority]}`}>
-              {task.priority}
-            </span>
-          </div>
-          {task.description && (
-            <p className="text-slate-500 text-xs mb-3 line-clamp-2">{task.description}</p>
-          )}
-          {task.dueDate && (
-            <p className="text-slate-600 text-xs mb-3">📅 {task.dueDate}</p>
-          )}
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => onStatusToggle(task.id)}
-              className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors font-medium"
-            >
-              Move →
-            </button>
-            <div className="flex gap-1">
-              <button
-                onClick={() => onEdit(task)}
-                className="p-1 text-slate-500 hover:text-indigo-400 transition-colors rounded"
-              >
-                ✏️
-              </button>
-              <button
-                onClick={() => onDelete(task.id)}
-                className="p-1 text-slate-500 hover:text-red-400 transition-colors rounded"
-              >
-                🗑️
-              </button>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
 
 function TaskManager() {
   const [tasks, setTasks] = useState(INITIAL_TASKS)
@@ -463,6 +274,7 @@ function TaskManager() {
                 onStatusToggle={handleStatusToggle}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                PRIORITY_COLORS={PRIORITY_COLORS}
               />
             ))}
           </div>
@@ -471,9 +283,9 @@ function TaskManager() {
       </div>
 
       {/* Modal */}
-      <Modal
+      <TaskModal
         isOpen={modalOpen}
-        onClose={() => { setModalOpen(false); setEditingTask(null) }}
+        onClose={() => { setModalOpen(false); setEditingTask(null); }}
         onSave={handleSave}
         editingTask={editingTask}
       />
