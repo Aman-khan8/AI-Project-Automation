@@ -1,17 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 import TaskModal from '../components/TaskModal';
 import KanbanColumn from '../components/KanbanColumn';
 
-const INITIAL_TASKS = [
-  { id: 1, name: 'Prepare Q4 financial report', description: 'Compile all quarterly data and create executive summary slides.', priority: 'High', dueDate: '2024-02-15', status: 'in-progress' },
-  { id: 2, name: 'Review pull requests for auth module', description: 'Review and merge pending PRs for the authentication refactor.', priority: 'High', dueDate: '2024-02-12', status: 'pending' },
-  { id: 3, name: 'Update team documentation', description: 'Refresh onboarding docs and API reference pages.', priority: 'Medium', dueDate: '2024-02-20', status: 'pending' },
-  { id: 4, name: 'Schedule 1:1 meetings with team', description: 'Set up recurring monthly 1:1s with all direct reports.', priority: 'Medium', dueDate: '2024-02-10', status: 'completed' },
-  { id: 5, name: 'Optimize database queries', description: 'Profile slow queries and add missing indexes.', priority: 'Low', dueDate: '2024-02-28', status: 'in-progress' },
-  { id: 6, name: 'Design new onboarding flow', description: 'Create wireframes and prototype for the redesigned user onboarding.', priority: 'High', dueDate: '2024-02-18', status: 'pending' },
-  { id: 7, name: 'Write unit tests for payment service', description: 'Achieve 80% coverage on the payment processing module.', priority: 'Medium', dueDate: '2024-02-22', status: 'completed' },
-  { id: 8, name: 'Set up CI/CD pipeline', description: 'Configure GitHub Actions for automated testing and deployment.', priority: 'Low', dueDate: '2024-03-01', status: 'completed' },
-]
+
 
 const STATUS_CYCLE = { pending: 'in-progress', 'in-progress': 'completed', completed: 'pending' }
 
@@ -37,19 +29,31 @@ const STATUS_LABELS = {
 
 
 function TaskManager() {
-  const [tasks, setTasks] = useState(INITIAL_TASKS)
+  const [tasks, setTasks] = useState([])
+    // Fetch tasks from backend on mount
+    useEffect(() => {
+      const fetchTasks = async () => {
+        try {
+          const res = await axios.get('/api/tasks');
+          setTasks(res.data.tasks || []);
+        } catch (err) {
+          setTasks([]);
+          // Optionally handle error (e.g., show error message)
+        }
+      };
+      fetchTasks();
+    }, []);
   const [view, setView] = useState('list') // 'list' | 'kanban'
   const [filterPriority, setFilterPriority] = useState('All')
   const [filterStatus, setFilterStatus] = useState('All')
   const [modalOpen, setModalOpen] = useState(false)
   const [editingTask, setEditingTask] = useState(null)
-
   const filteredTasks = tasks.filter((t) => {
-    const matchPriority = filterPriority === 'All' || t.priority === filterPriority
-    const matchStatus = filterStatus === 'All' || t.status === filterStatus
-    return matchPriority && matchStatus
-  })
-
+    const matchPriority = filterPriority === 'All' || t.priority === filterPriority;
+    const matchStatus = filterStatus === 'All' || t.status === filterStatus;
+    return matchPriority && matchStatus;
+  });
+   
   const handleStatusToggle = (id) => {
     setTasks((prev) =>
       prev.map((t) => (t.id === id ? { ...t, status: STATUS_CYCLE[t.status] } : t))
@@ -99,7 +103,7 @@ function TaskManager() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-white">Task Manager</h1>
-            <p className="text-slate-400 mt-1">{tasks.length} total tasks</p>
+            <p className="text-slate-400 mt-1">{tasks?.length || 0} total tasks</p>
           </div>
           <button
             onClick={handleAddNew}
@@ -196,8 +200,17 @@ function TaskManager() {
             {filteredTasks.length === 0 && (
               <div className="text-center py-16 text-slate-500">
                 <div className="text-4xl mb-3">🔍</div>
-                <p className="font-medium">No tasks match your filters</p>
-                <p className="text-sm mt-1">Try adjusting the priority or status filter</p>
+                {tasks.length === 0 ? (
+                  <>
+                    <p className="font-medium">No tasks found</p>
+                    <p className="text-sm mt-1">Click "Add Task" to create your first task!</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-medium">No tasks match your filters</p>
+                    <p className="text-sm mt-1">Try adjusting the priority or status filter</p>
+                  </>
+                )}
               </div>
             )}
 
