@@ -8,7 +8,7 @@ const addTask =async(req,res)=>{
     try{
     const {userId,title,description,dueDate,taskStatus, Priority}=req.body;
            userId=req.user._id;
-
+           console.log(userId);
            const createTask=await taskModel.create({
             userId,
             title,

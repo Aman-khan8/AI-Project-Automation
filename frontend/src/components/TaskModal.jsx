@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 
 const EMPTY_FORM = { name: '', description: '', priority: 'Medium', dueDate: '', status: 'pending' };
 
@@ -10,10 +11,18 @@ function ModalInner({ onClose, onSave, editingTask }) {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = async(e) => {
+   try{ e.preventDefault();
     onSave(form);
+    console.log("Form data to save:", form);
+      const addTask=await axios.post(`${import.meta.env.VITE_API_URL}/tasks/addTask`,form);
+      if(addTask.status==200){
+        console.log("Task added successfully");
+      } 
     onClose();
+   }catch(err){
+    console.error("Error saving task:", err);
+   }
   };
 
   return (

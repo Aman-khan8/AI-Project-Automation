@@ -34,11 +34,11 @@ function TaskManager() {
     useEffect(() => {
       const fetchTasks = async () => {
         try {
-          const res = await axios.get('/api/tasks');
+          const res = await axios.get(`${import.meta.env.VITE_API_URL}/tasks/fetchTasks`);
           setTasks(res.data.tasks || []);
         } catch (err) {
           setTasks([]);
-          // Optionally handle error (e.g., show error message)
+          console.error("Error fetching tasks:", err);
         }
       };
       fetchTasks();
@@ -110,7 +110,7 @@ function TaskManager() {
             className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl transition-colors shadow-lg shadow-indigo-500/20"
           >
             <span>➕</span> Add Task
-          </button>
+          </button> 
         </div>
 
         {/* Controls Bar */}
