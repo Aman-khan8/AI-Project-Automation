@@ -1,13 +1,14 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useDispatch,useSelector} from 'react-redux';
+import axios from 'axios';
+import { setLogin } from '../store/loginSlice.js';
 
 
 
-
-function Navbar() {
+ function Navbar() {
   const navigate = useNavigate()
  const isLogin = useSelector((state) => state.login.login);
- 
+  console.log("Login state in Navbar:", isLogin);
   const navLinkClass = ({ isActive }) =>
     `px-2 py-1.5 rounded-md text-xs font-medium transition-colors duration-200 ${
       isActive
@@ -47,16 +48,26 @@ function Navbar() {
             </div>
             {isLogin ? (
               <button
-                onClick={() => navigate('/Settings')}
+                onClick={async() => {
+                  const logout =await axios.post(`${import.meta.env.VITE_API_URL}/auth/logout`,{},{
+                    isCredentials:true,
+                  })
+                  if(logout.status===200){
+                    console.log("Logout successful");
+                    useDispatch(setLogin(false));
+                    navigate('/Login');
+                  }
+                }}
                 className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg transition-colors duration-200 shadow-lg shadow-indigo-500/20"
               >
-                Profile
+                Log Out
               </button>
             ) : (
               <button
                 onClick={() => navigate('/Login')}
                 className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg transition-colors duration-200 shadow-lg shadow-indigo-500/20"
               >
+                
                 Get Started
               </button>
             )}

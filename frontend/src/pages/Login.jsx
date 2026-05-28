@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Eye, EyeOff, Check, X } from "lucide-react";
-
+import {useDispatch} from 'react-redux';
+import { setLogin } from '../store/loginSlice.js';
 
 
 function Login() {
@@ -12,7 +13,7 @@ function Login() {
   const [loading, setLoading] = useState(false);
    const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
- 
+  const Dispatch=useDispatch(); 
 const handleSubmit = async (e) => {
   e.preventDefault();
   setLoading(true);
@@ -23,22 +24,16 @@ const handleSubmit = async (e) => {
     const res = await axios.post(`${import.meta.env.VITE_API_URL}/auth/login`, { email, password });
 
 
-    const responseData = res.data;
-
-
-    
-    if (responseData.data && responseData.data.token) {
-      localStorage.setItem('token', responseData.data.token);
-      localStorage.setItem('user', JSON.stringify(responseData.data.user));
-
-  
+    const responseData = res.data;        
+    if (responseData.status===200) {
+      Dispatch(setLogin(true));
       navigate('/');
     } else {
-      setError("Token not found in server response.");
+      setError("Error in login from Backend.");
     }
 
   } catch (err) {
-    // 5. Axios errors hold the server message in err.response.data
+  
     const serverMessage = err.response?.data?.message || err.message || 'Login failed';
     setError(serverMessage);
     console.error("Login Error:", err);
@@ -89,12 +84,12 @@ const handleSubmit = async (e) => {
                </div>
         <button
           type="submit"
-          className="w-full py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold transition-colors mb-3"
+          className="w-full py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold transition-colors mt-3"
           disabled={loading}
         >
           {loading ? 'Logging in...' : 'Login'}
         </button>
-        <div className="text-center text-slate-400 text-xs">
+        <div className="text-center text-slate-400 text-xs mt-1">
           Don't have an account?{' '}
           <span
             className="text-indigo-400 hover:underline cursor-pointer"

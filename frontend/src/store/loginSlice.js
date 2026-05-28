@@ -10,7 +10,7 @@ const loginSlice=createSlice({
     initialState,
     reducers:{
         setLogin:(state, action)=>{
-            state.login=state.login===false?true:false
+            state.login=action.payload;
         }
     }
 })

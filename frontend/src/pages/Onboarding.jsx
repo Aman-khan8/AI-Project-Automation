@@ -8,11 +8,16 @@ import Step2Role from './onboarding/Step2Role';
 import Step3Goals from './onboarding/Step3Goals';
 import Step4WorkStyle from './onboarding/Step4WorkStyle';
 import StepComplete from './onboarding/StepComplete';
+import {useDispatch} from 'react-redux';
+import { setLogin } from '../store/loginSlice.js';
+
+
 const TOTAL_STEPS = 4;
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function Onboarding() {
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
+  const Dispatch=useDispatch();
   const [data, setData] = useState({
     name: '',
     email: '',
@@ -29,10 +34,11 @@ export default function Onboarding() {
  const  onGoToDashboard=async() => {
   try{
  delete data.confirmPassword;
-    console.log(data);
-  const sendData=await axios.post(`${import.meta.env.VITE_API_URL}/auth/signup`, data);
+   
+  const sendData=await axios.post(`${import.meta.env.VITE_API_URL}/auth/signup`, data,{withCredentials:true});
+  
   if(sendData.status===201){
-    console.log("Signup data sent successfully");
+    Dispatch(setLogin(true));
       navigate('/')
   }
   else{

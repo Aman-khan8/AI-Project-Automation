@@ -28,10 +28,13 @@ const login = async (req, res) => {
     const loggedInUser = user.toObject();
     delete loggedInUser.password;
 
-    return res.status(200).json(
+    return res.cookie("token",token,{
+      httpOnly:true,
+      secure:false,
+      sameSite:"lax"
+    }).status(200).json(
       new ApiResponse(200, "success", "Login Successful", {
         user: loggedInUser,
-        token: token,
       }),
     );
   } catch (err) {
