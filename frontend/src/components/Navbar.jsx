@@ -2,13 +2,14 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useDispatch,useSelector} from 'react-redux';
 import axios from 'axios';
 import { setLogin } from '../store/loginSlice.js';
-
+import Login from '../pages/Login.jsx';
 
 
  function Navbar() {
   const navigate = useNavigate()
+  const Dispatch=useDispatch();
  const isLogin = useSelector((state) => state.login.login);
-  console.log("Login state in Navbar:", isLogin);
+  
   const navLinkClass = ({ isActive }) =>
     `px-2 py-1.5 rounded-md text-xs font-medium transition-colors duration-200 ${
       isActive
@@ -53,8 +54,9 @@ import { setLogin } from '../store/loginSlice.js';
                     isCredentials:true,
                   })
                   if(logout.status===200){
-                    console.log("Logout successful");
-                    useDispatch(setLogin(false));
+                    
+                    Dispatch(setLogin(false));
+
                     navigate('/Login');
                   }
                 }}

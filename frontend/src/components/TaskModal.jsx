@@ -15,8 +15,9 @@ function ModalInner({ onClose, onSave, editingTask }) {
    try{ e.preventDefault();
     onSave(form);
     console.log("Form data to save:", form);
-      const addTask=await axios.post(`${import.meta.env.VITE_API_URL}/tasks/addTask`,form);
-      if(addTask.status==200){
+      const addTask=await axios.post(`${import.meta.env.VITE_API_URL}/tasks/addTask`,form,{withCredentials:true});
+      console.log("Add Task Response:", addTask);
+      if(addTask.statuscode==200){
         console.log("Task added successfully");
       } 
     onClose();

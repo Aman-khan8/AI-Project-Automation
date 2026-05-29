@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import TaskModal from '../components/TaskModal';
 import KanbanColumn from '../components/KanbanColumn';
+import { useSelector } from 'react-redux';
 
 
 
@@ -30,12 +31,21 @@ const STATUS_LABELS = {
 
 function TaskManager() {
   const [tasks, setTasks] = useState([])
+  const isLogin = useSelector((state) => state.login.login);
     // Fetch tasks from backend on mount
     useEffect(() => {
       const fetchTasks = async () => {
         try {
-          const res = await axios.get(`${import.meta.env.VITE_API_URL}/tasks/fetchTasks`);
-          setTasks(res.data.tasks || []);
+          if(!isLogin) return;
+          const res = await axios.get(`${import.meta.env.VITE_API_URL}/tasks/fetchTasks`,{
+            withCredentials:true,
+          });
+          if(res.statuscode === 200){
+            setTasks(res.data.tasks || []);
+          }
+          else{
+            console.error("Failed to fetch tasks :", res.message);
+          }
         } catch (err) {
           setTasks([]);
           console.error("Error fetching tasks:", err);
@@ -203,7 +213,11 @@ function TaskManager() {
                 {tasks.length === 0 ? (
                   <>
                     <p className="font-medium">No tasks found</p>
-                    <p className="text-sm mt-1">Click "Add Task" to create your first task!</p>
+                    { isLogin ? <p className="text-sm mt-1">Click "Add Task" to create your first task!</p>
+                     : (
+                      <p className="text-sm mt-1">Please log in to view your tasks.</p>
+                    )}
+                    
                   </>
                 ) : (
                   <>

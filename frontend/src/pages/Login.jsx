@@ -21,15 +21,16 @@ const handleSubmit = async (e) => {
 
   try {
     
-    const res = await axios.post(`${import.meta.env.VITE_API_URL}/auth/login`, { email, password });
+    const res = await axios.post(`${import.meta.env.VITE_API_URL}/auth/login`, { email, password },{withCredentials:true});
 
 
-    const responseData = res.data;        
-    if (responseData.status===200) {
+    const responseData = res.data; 
+          
+    if (responseData.statuscode===200) {
       Dispatch(setLogin(true));
       navigate('/');
     } else {
-      setError("Error in login from Backend.");
+      setError(responseData.message || 'Login failed');
     }
 
   } catch (err) {

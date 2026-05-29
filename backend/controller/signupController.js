@@ -5,10 +5,10 @@ import ApiResponse from "../utils/apiResponse.js";
  
 const signUp = async (req, res) => {
   try {
-    console.log(req.body);
+       console.log("Received signup data:", req.body);
     const { name, email, password, role, goals, workStyle } = req.body;
 
-    console.log("Received signup data:", { name, email, role, goals, workStyle ,pasword});
+    console.log("Received signup data:", { name, email, role, goals, workStyle ,password});
 
     const alreadyExit = await User.findOne({ email });
     if (alreadyExit) {
