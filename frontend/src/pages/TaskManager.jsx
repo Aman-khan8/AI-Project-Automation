@@ -4,16 +4,15 @@ import TaskModal from '../components/TaskModal';
 import KanbanColumn from '../components/KanbanColumn';
 import { useSelector } from 'react-redux';
 
+const API_BASE = import.meta.env.VITE_API_URL;
 
-
-const STATUS_CYCLE = { pending: 'in-progress', 'in-progress': 'completed', completed: 'pending' }
+const STATUS_CYCLE = { pending: 'in-progress', 'in-progress': 'completed', completed: 'pending' };
 
 const PRIORITY_COLORS = {
   High: 'bg-red-500/20 text-red-400 border border-red-500/30',
   Medium: 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30',
   Low: 'bg-green-500/20 text-green-400 border border-green-500/30',
-}
-
+};
 
 const STATUS_COLORS = {
   pending: 'bg-slate-500/20 text-slate-400 border border-slate-500/30',
@@ -25,79 +24,147 @@ const STATUS_LABELS = {
   pending: '⏳ Pending',
   'in-progress': '🔄 In Progress',
   completed: '✅ Completed',
-}
-
-
+};
 
 function TaskManager() {
-  const [tasks, setTasks] = useState([])
+  const [tasks, setTasks] = useState([]);
   const isLogin = useSelector((state) => state.login.login);
-    // Fetch tasks from backend on mount
-    useEffect(() => {
-      const fetchTasks = async () => {
-        try {
-          if(!isLogin) return;
-          const res = await axios.get(`${import.meta.env.VITE_API_URL}/tasks/fetchTasks`,{
-            withCredentials:true,
-          });
-          if(res.statuscode === 200){
-            setTasks(res.data.tasks || []);
-          }
-          else{
-            console.error("Failed to fetch tasks :", res.message);
-          }
-        } catch (err) {
-          setTasks([]);
-          console.error("Error fetching tasks:", err);
-        }
-      };
-      fetchTasks();
-    }, []);
-  const [view, setView] = useState('list') // 'list' | 'kanban'
+
+  const normalizeTask = (task) => ({
+    id: task._id || task.id,
+    title: task.title || task.name || '',
+    name: task.title || task.name || '',
+    description: task.description || '',
+    dueDate: task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 10) : '',
+    taskStatus: task.taskStatus || task.status || 'pending',
+    status: task.taskStatus || task.status || 'pending',
+    Priority: task.Priority || task.priority || 'Medium',
+    priority: task.Priority || task.priority || 'Medium',
+  });
+
+  const fetchTasks = async () => {
+    try {
+      if (!isLogin) {
+        setTasks([]);
+        return;
+      }
+
+      const res = await axios.get(`${API_BASE}/tasks/fetchTasks`, {
+        withCredentials: true,
+      });
+
+      if (res.data?.statuscode === 200) {
+        const payload = res.data?.data || [];
+        setTasks(payload.map(normalizeTask));
+      } else {
+        setTasks([]);
+        console.error('Failed to fetch tasks:', res.data?.message);
+      }
+    } catch (err) {
+      setTasks([]);
+      console.error('Error fetching tasks:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchTasks();
+  }, [isLogin]);
+
+  const [view, setView] = useState('list'); // 'list' | 'kanban'
   const [filterPriority, setFilterPriority] = useState('All')
   const [filterStatus, setFilterStatus] = useState('All')
   const [modalOpen, setModalOpen] = useState(false)
   const [editingTask, setEditingTask] = useState(null)
   const filteredTasks = tasks.filter((t) => {
-    const matchPriority = filterPriority === 'All' || t.priority === filterPriority;
-    const matchStatus = filterStatus === 'All' || t.status === filterStatus;
+    const matchPriority = filterPriority === 'All' || t.Priority === filterPriority;
+    const matchStatus = filterStatus === 'All' || t.taskStatus === filterStatus;
     return matchPriority && matchStatus;
   });
    
-  const handleStatusToggle = (id) => {
-    setTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, status: STATUS_CYCLE[t.status] } : t))
-    )
-  }
+  const handleStatusToggle = async (id) => {
+    const task = tasks.find((t) => t.id === id);
+    if (!task) return;
 
-  const handleDelete = (id) => {
-    setTasks((prev) => prev.filter((t) => t.id !== id))
-  }
+    const nextStatus = STATUS_CYCLE[task.taskStatus];
+    try {
+      const res = await axios.put(
+        `${API_BASE}/tasks/editTask`,
+        { _id: task.id, taskStatus: nextStatus },
+        { withCredentials: true }
+      );
+
+      if (res.data?.statuscode === 200) {
+        const updated = normalizeTask(res.data.data.editTask);
+        setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
+      } else {
+        console.error('Failed to update task status:', res.data?.message);
+      }
+    } catch (err) {
+      console.error('Error updating task status:', err);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      const res = await axios.delete(`${API_BASE}/tasks/deleteTask`, {
+        data: { _id: id },
+        withCredentials: true,
+      });
+
+      if (res.data?.statuscode === 200) {
+        setTasks((prev) => prev.filter((t) => t.id !== id));
+      } else {
+        console.error('Failed to delete task:', res.data?.message);
+      }
+    } catch (err) {
+      console.error('Error deleting task:', err);
+    }
+  };
 
   const handleEdit = (task) => {
-    setEditingTask(task)
-    setModalOpen(true)
-  }
+    setEditingTask(task);
+    setModalOpen(true);
+  };
 
   const handleAddNew = () => {
     setEditingTask(null)
     setModalOpen(true)
   }
 
-  const handleSave = (form) => {
-    if (editingTask) {
-      setTasks((prev) =>
-        prev.map((t) => (t.id === editingTask.id ? { ...t, ...form } : t))
-      )
-    } else {
-      setTasks((prev) => [
-        ...prev,
-        { ...form, id: Date.now() },
-      ])
+  const handleSave = async (form) => {
+    try {
+      if (editingTask) {
+        const res = await axios.put(
+          `${API_BASE}/tasks/editTask`,
+          { _id: editingTask.id, ...form },
+          { withCredentials: true }
+        );
+
+        if (res.data?.statuscode === 200) {
+          const updatedTask = normalizeTask(res.data.data.editTask);
+          setTasks((prev) => prev.map((t) => (t.id === editingTask.id ? updatedTask : t)));
+        } else {
+          throw new Error(res.data?.message || 'Task update failed');
+        }
+      } else {
+        const res = await axios.post(`${API_BASE}/tasks/addTask`, form, {
+          withCredentials: true,
+        });
+
+        if (res.data?.statuscode === 200) {
+          const createdTask = normalizeTask(res.data.data.createTask);
+          setTasks((prev) => [...prev, createdTask]);
+        } else {
+          throw new Error(res.data?.message || 'Task creation failed');
+        }
+      }
+    } catch (err) {
+      console.error('Error saving task:', err);
+      throw err;
+    } finally {
+      setEditingTask(null);
     }
-    setModalOpen(false)
-    setEditingTask(null)
-  }
+  };
 
   const kanbanColumns = [
     { key: 'pending', title: 'To Do', icon: '📋', color: 'text-slate-300' },
@@ -227,7 +294,7 @@ function TaskManager() {
                 )}
               </div>
             )}
-
+            
             {filteredTasks.map((task, idx) => (
               <div
                 key={task.id}
@@ -245,8 +312,8 @@ function TaskManager() {
 
                 {/* Priority */}
                 <div className="col-span-2 flex justify-center">
-                  <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${PRIORITY_COLORS[task.priority]}`}>
-                    {task.priority}
+                  <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${PRIORITY_COLORS[task.Priority]}`}>
+                    {task.Priority}
                   </span>
                 </div>
 
@@ -259,10 +326,10 @@ function TaskManager() {
                 <div className="col-span-2 flex justify-center">
                   <button
                     onClick={() => handleStatusToggle(task.id)}
-                    className={`text-xs font-medium px-2.5 py-1 rounded-full cursor-pointer transition-opacity hover:opacity-75 ${STATUS_COLORS[task.status]}`}
+                    className={`text-xs font-medium px-2.5 py-1 rounded-full cursor-pointer transition-opacity hover:opacity-75 ${STATUS_COLORS[task.taskStatus]}`}
                     title="Click to cycle status"
                   >
-                    {STATUS_LABELS[task.status]}
+                    {STATUS_LABELS[task.taskStatus]}
                   </button>
                 </div>
 
@@ -297,7 +364,7 @@ function TaskManager() {
                 title={col.title}
                 icon={col.icon}
                 color={col.color}
-                tasks={filteredTasks.filter((t) => t.status === col.key)}
+                tasks={filteredTasks.filter((t) => t.taskStatus === col.key)}
                 onStatusToggle={handleStatusToggle}
                 onEdit={handleEdit}
                 onDelete={handleDelete}

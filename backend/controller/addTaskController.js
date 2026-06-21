@@ -6,15 +6,19 @@ import ApiResponse from "../utils/apiResponse.js";
 const addTask =async(req,res)=>{
           
     try{
-    const {userId,title,description,dueDate,taskStatus, Priority}=req.body;
-           userId=req.user._id;
-           console.log(userId);
-           const createTask=await taskModel.create({
+
+       
+    const {title,description,dueDate,taskStatus, Priority}=req.body;
+    const userId=req.user._id;
+
+        
+        
+       const createTask=await taskModel.create({
             userId,
             title,
             description,
             dueDate,
-            taskStatue,
+            taskStatus,
             Priority
            });
 

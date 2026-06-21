@@ -1,4 +1,9 @@
 import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import axios from 'axios'
+import { useSelector } from 'react-redux'
+
+const API_BASE = import.meta.env.VITE_API_URL
 
 const overviewCards = [
   {
@@ -8,7 +13,7 @@ const overviewCards = [
     bg: 'bg-orange-500/10',
     border: 'border-orange-500/20',
     iconBg: 'bg-orange-500/20',
-    textColor: 'text-orange-400',
+    textColor: 'text-orange-500',
     valueColor: 'text-orange-300',
   },
   {
@@ -43,14 +48,6 @@ const overviewCards = [
   },
 ]
 
-const recentTasks = [
-  { id: 1, name: 'Prepare Q4 financial report', status: 'completed', priority: 'High' },
-  { id: 2, name: 'Review pull requests for auth module', status: 'in-progress', priority: 'High' },
-  { id: 3, name: 'Update team documentation', status: 'pending', priority: 'Medium' },
-  { id: 4, name: 'Schedule 1:1 meetings with team', status: 'completed', priority: 'Medium' },
-  { id: 5, name: 'Optimize database queries', status: 'in-progress', priority: 'Low' },
-]
-
 const statusBadge = {
   completed: 'bg-green-500/20 text-green-400 border border-green-500/30',
   'in-progress': 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
@@ -71,6 +68,44 @@ const priorityBadge = {
 
 function Dashboard() {
   const navigate = useNavigate()
+  const isLogin = useSelector((state) => state.login.login)
+  const [recentTasks, setRecentTasks] = useState([])
+
+  const normalizeTask = (task) => ({
+    id: task._id || task.id,
+    title: task.title || task.name || '',
+    description: task.description || '',
+    priority: task.Priority || task.priority || 'Medium',
+    taskStatus: task.taskStatus || task.status || 'pending',
+  })
+
+  useEffect(() => {
+    const fetchTasks = async () => {
+      if (!isLogin) {
+        setRecentTasks([])
+        return
+      }
+
+      try {
+        const res = await axios.get(`${API_BASE}/tasks/fetchTasks`, {
+          withCredentials: true,
+        })
+
+        if (res.data?.statuscode === 200) {
+          const payload = res.data?.data || []
+          setRecentTasks(payload.map(normalizeTask))
+        } else {
+          setRecentTasks([])
+          console.error('Failed to fetch tasks:', res.data?.message)
+        }
+      } catch (err) {
+        setRecentTasks([])
+        console.error('Error fetching tasks:', err)
+      }
+    }
+
+    fetchTasks()
+  }, [isLogin])
 
   const today = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -82,12 +117,11 @@ function Dashboard() {
   return (
     <div className="min-h-screen bg-slate-950 px-2 py-4">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
         <div className="mb-4">
           <h1 className="text-2xl font-bold text-white">Good morning, Alex 👋</h1>
           <p className="text-slate-400 mt-0.5 text-xs">{today}</p>
         </div>
-        {/* Overview Cards */}
+
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-4">
           {overviewCards.map((card) => (
             <div
@@ -102,8 +136,8 @@ function Dashboard() {
             </div>
           ))}
         </div>
+
         <div className="grid lg:grid-cols-3 gap-4 mb-4">
-          {/* AI Daily Summary */}
           <div className="lg:col-span-2 relative rounded-xl p-px bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500">
             <div className="bg-slate-900 rounded-xl p-4 h-full">
               <div className="flex items-center gap-2 mb-2">
@@ -141,7 +175,6 @@ function Dashboard() {
               </div>
             </div>
           </div>
-          {/* Quick Actions */}
           <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-4">
             <h2 className="text-white font-bold mb-3 text-base">Quick Actions</h2>
             <div className="space-y-2">
@@ -170,7 +203,7 @@ function Dashboard() {
             </div>
           </div>
         </div>
-        {/* Recent Tasks */}
+
         <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-4">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-white font-bold text-base">Recent Tasks</h2>
@@ -182,32 +215,35 @@ function Dashboard() {
             </button>
           </div>
           <div className="space-y-0.5">
-            {/* Table header */}
             <div className="grid grid-cols-12 gap-2 px-2 py-1 text-xs font-semibold text-slate-500 uppercase tracking-wider">
               <div className="col-span-6">Task</div>
               <div className="col-span-2 text-center">Priority</div>
               <div className="col-span-4 text-right">Status</div>
             </div>
-            {recentTasks.map((task) => (
-              <div
-                key={task.id}
-                className="grid grid-cols-12 gap-2 items-center px-2 py-2 rounded-lg hover:bg-slate-700/30 transition-colors"
-              >
-                <div className="col-span-6 text-xs text-slate-200 font-medium truncate">
-                  {task.name}
+            {recentTasks.length > 0 ? (
+              recentTasks.map((task) => (
+                <div
+                  key={task.id}
+                  className="grid grid-cols-12 gap-2 items-center px-2 py-2 rounded-lg hover:bg-slate-700/30 transition-colors"
+                >
+                  <div className="col-span-6 text-xs text-slate-200 font-medium truncate">
+                    {task.title}
+                  </div>
+                  <div className="col-span-2 text-center">
+                    <span className={`text-xs font-semibold ${priorityBadge[task.priority]}`}>
+                      {task.priority}
+                    </span>
+                  </div>
+                  <div className="col-span-4 flex justify-end">
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusBadge[task.taskStatus]}`}>
+                      {statusLabel[task.taskStatus]}
+                    </span>
+                  </div>
                 </div>
-                <div className="col-span-2 text-center">
-                  <span className={`text-xs font-semibold ${priorityBadge[task.priority]}`}>
-                    {task.priority}
-                  </span>
-                </div>
-                <div className="col-span-4 flex justify-end">
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusBadge[task.status]}`}>
-                    {statusLabel[task.status]}
-                  </span>
-                </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <div className="px-2 py-4 text-sm text-slate-400">Recent tasks will appear here once you log in.</div>
+            )}
           </div>
         </div>
       </div>

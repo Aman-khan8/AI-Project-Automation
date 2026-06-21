@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 
-const EMPTY_FORM = { name: '', description: '', priority: 'Medium', dueDate: '', status: 'pending' };
+const EMPTY_FORM = { title: '', description: '', Priority: 'Medium', dueDate: '', taskStatus: 'pending' };
 
 function ModalInner({ onClose, onSave, editingTask }) {
   const [form, setForm] = useState(editingTask || EMPTY_FORM);
@@ -11,19 +10,14 @@ function ModalInner({ onClose, onSave, editingTask }) {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async(e) => {
-   try{ e.preventDefault();
-    onSave(form);
-    console.log("Form data to save:", form);
-      const addTask=await axios.post(`${import.meta.env.VITE_API_URL}/tasks/addTask`,form,{withCredentials:true});
-      console.log("Add Task Response:", addTask);
-      if(addTask.statuscode==200){
-        console.log("Task added successfully");
-      } 
-    onClose();
-   }catch(err){
-    console.error("Error saving task:", err);
-   }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await onSave(form);
+      onClose();
+    } catch (err) {
+      console.error('Error saving task:', err);
+    }
   };
 
   return (
@@ -50,8 +44,8 @@ function ModalInner({ onClose, onSave, editingTask }) {
               Task Name <span className="text-red-400">*</span>
             </label>
             <input
-              name="name"
-              value={form.name}
+              name="title"
+              value={form.title}
               onChange={handleChange}
               placeholder="Enter task name..."
               required
@@ -73,8 +67,8 @@ function ModalInner({ onClose, onSave, editingTask }) {
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1.5">Priority</label>
               <select
-                name="priority"
-                value={form.priority}
+                name="Priority"
+                value={form.Priority}
                 onChange={handleChange}
                 className="w-full bg-slate-800 border border-slate-600/50 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
               >
@@ -86,8 +80,8 @@ function ModalInner({ onClose, onSave, editingTask }) {
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1.5">Status</label>
               <select
-                name="status"
-                value={form.status}
+                name="taskStatus"
+                value={form.taskStatus}
                 onChange={handleChange}
                 className="w-full bg-slate-800 border border-slate-600/50 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
               >
