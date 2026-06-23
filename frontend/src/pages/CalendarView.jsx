@@ -1,32 +1,16 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import { useSelector } from 'react-redux'
+import axios from 'axios'
 
-// ─── Mock task data ───────────────────────────────────────────────────────────
-const BASE_YEAR = 2026
-const BASE_MONTH = 4 // May (0-indexed)
+const API_BASE = import.meta.env.VITE_API_URL
 
-const MOCK_TASKS = [
-  { id: 1,  name: 'Q4 Financial Report',       date: '2026-05-08', priority: 'High',   status: 'in-progress' },
-  { id: 2,  name: 'Auth Module PR Review',      date: '2026-05-08', priority: 'High',   status: 'pending' },
-  { id: 3,  name: 'Team Standup',               date: '2026-05-09', priority: 'Medium', status: 'pending' },
-  { id: 4,  name: 'Update Documentation',       date: '2026-05-12', priority: 'Medium', status: 'pending' },
-  { id: 5,  name: 'Design Onboarding Flow',     date: '2026-05-13', priority: 'High',   status: 'pending' },
-  { id: 6,  name: 'Optimize DB Queries',        date: '2026-05-14', priority: 'Low',    status: 'in-progress' },
-  { id: 7,  name: 'Client Demo Prep',           date: '2026-05-15', priority: 'High',   status: 'pending' },
-  { id: 8,  name: 'Write Unit Tests',           date: '2026-05-16', priority: 'Medium', status: 'completed' },
-  { id: 9,  name: 'CI/CD Pipeline Setup',       date: '2026-05-19', priority: 'Low',    status: 'completed' },
-  { id: 10, name: 'Sprint Planning Meeting',    date: '2026-05-20', priority: 'Medium', status: 'pending' },
-  { id: 11, name: 'Security Audit Review',      date: '2026-05-21', priority: 'High',   status: 'pending' },
-  { id: 12, name: 'Performance Benchmarking',   date: '2026-05-22', priority: 'Medium', status: 'pending' },
-  { id: 13, name: 'Stakeholder Presentation',   date: '2026-05-26', priority: 'High',   status: 'pending' },
-  { id: 14, name: 'Code Review Session',        date: '2026-05-27', priority: 'Low',    status: 'pending' },
-  { id: 15, name: 'Monthly Retrospective',      date: '2026-05-28', priority: 'Medium', status: 'pending' },
-  { id: 16, name: 'Deploy to Production',       date: '2026-05-29', priority: 'High',   status: 'pending' },
-  { id: 17, name: 'Team Lunch',                 date: '2026-05-30', priority: 'Low',    status: 'pending' },
-  // June tasks
-  { id: 18, name: 'Q2 Planning Session',        date: '2026-06-02', priority: 'High',   status: 'pending' },
-  { id: 19, name: 'New Feature Kickoff',        date: '2026-06-03', priority: 'Medium', status: 'pending' },
-  { id: 20, name: 'Infrastructure Review',      date: '2026-06-05', priority: 'Low',    status: 'pending' },
-]
+const normalizeTask = (task) => ({
+  id: task._id || task.id,
+  name: task.title || task.name || '',
+  date: task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 10) : task.date || '',
+  priority: task.Priority || task.priority || 'Medium',
+  status: task.taskStatus || task.status || 'pending',
+})
 
 // ─── Colour maps ──────────────────────────────────────────────────────────────
 const PRIORITY_DOT = {
@@ -285,21 +269,46 @@ function Legend() {
 function CalendarView() {
   const today = useMemo(() => new Date(), [])
   const [viewMode, setViewMode] = useState('month') // 'month' | 'week'
-  const [currentYear, setCurrentYear] = useState(BASE_YEAR)
-  const [currentMonth, setCurrentMonth] = useState(BASE_MONTH)
+  const [currentYear, setCurrentYear] = useState(today.getFullYear())
+  const [currentMonth, setCurrentMonth] = useState(today.getMonth())
   const [selectedDate, setSelectedDate] = useState(today)
   const [panelLoading, setPanelLoading] = useState(false)
   const [calLoading, setCalLoading] = useState(false)
+  const [tasks, setTasks] = useState([])
+  const isLogin = useSelector((state) => state.login.login)
+
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        const res = await axios.get(`${API_BASE}/tasks/fetchTasks`, { withCredentials: true })
+        if (res.data?.statuscode === 200) {
+          setTasks((res.data.data || []).map(normalizeTask))
+        } else {
+          setTasks([])
+        }
+      } catch (err) {
+        console.error('Error fetching calendar tasks:', err)
+        setTasks([])
+      }
+    }
+
+    if (isLogin) {
+      fetchTasks()
+    } else {
+      setTasks([])
+    }
+  }, [isLogin])
 
   // Group tasks by date string
   const tasksByDate = useMemo(() => {
     const map = {}
-    MOCK_TASKS.forEach((t) => {
+    tasks.forEach((t) => {
+      if (!t.date) return
       if (!map[t.date]) map[t.date] = []
       map[t.date].push(t)
     })
     return map
-  }, [])
+  }, [tasks])
 
   // Calendar days for month view (with leading nulls)
   const calDays = useMemo(() => {
@@ -356,7 +365,7 @@ function CalendarView() {
 
   // Stats
   const monthKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`
-  const monthTasks = MOCK_TASKS.filter((t) => t.date.startsWith(monthKey))
+  const monthTasks = tasks.filter((t) => t.date.startsWith(monthKey))
   const highCount = monthTasks.filter((t) => t.priority === 'High').length
   const completedCount = monthTasks.filter((t) => t.status === 'completed').length
 

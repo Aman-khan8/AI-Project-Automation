@@ -5,49 +5,6 @@ import { useSelector } from 'react-redux'
 
 const API_BASE = import.meta.env.VITE_API_URL
 
-const overviewCards = [
-  {
-    label: 'Pending Tasks',
-    value: 12,
-    icon: '⏰',
-    bg: 'bg-orange-500/10',
-    border: 'border-orange-500/20',
-    iconBg: 'bg-orange-500/20',
-    textColor: 'text-orange-500',
-    valueColor: 'text-orange-300',
-  },
-  {
-    label: 'Completed Today',
-    value: 8,
-    icon: '✅',
-    bg: 'bg-green-500/10',
-    border: 'border-green-500/20',
-    iconBg: 'bg-green-500/20',
-    textColor: 'text-green-400',
-    valueColor: 'text-green-300',
-  },
-  {
-    label: 'Upcoming Events',
-    value: 5,
-    icon: '📅',
-    bg: 'bg-blue-500/10',
-    border: 'border-blue-500/20',
-    iconBg: 'bg-blue-500/20',
-    textColor: 'text-blue-400',
-    valueColor: 'text-blue-300',
-  },
-  {
-    label: 'AI Suggestions',
-    value: 3,
-    icon: '✨',
-    bg: 'bg-purple-500/10',
-    border: 'border-purple-500/20',
-    iconBg: 'bg-purple-500/20',
-    textColor: 'text-purple-400',
-    valueColor: 'text-purple-300',
-  },
-]
-
 const statusBadge = {
   completed: 'bg-green-500/20 text-green-400 border border-green-500/30',
   'in-progress': 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
@@ -75,9 +32,77 @@ function Dashboard() {
     id: task._id || task.id,
     title: task.title || task.name || '',
     description: task.description || '',
+    dueDate: task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 10) : '',
     priority: task.Priority || task.priority || 'Medium',
     taskStatus: task.taskStatus || task.status || 'pending',
   })
+
+  const todayKey = new Date().toISOString().slice(0, 10)
+  const weekEndKey = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+  const dueTodayCount = recentTasks.filter((t) => t.dueDate === todayKey).length
+  const pendingCount = recentTasks.filter((t) => t.taskStatus === 'pending').length
+  const completedTodayCount = recentTasks.filter((t) => t.taskStatus === 'completed' && t.dueDate === todayKey).length
+  const upcomingCount = recentTasks.filter((t) => {
+    if (!t.dueDate) return false
+    return t.dueDate >= todayKey && t.dueDate <= weekEndKey
+  }).length
+  const overdueCount = recentTasks.filter((t) => t.dueDate && t.dueDate < todayKey && t.taskStatus !== 'completed').length
+  const highPriorityCount = recentTasks.filter((t) => t.priority === 'High').length
+  const topTask =
+    recentTasks.find((t) => t.taskStatus === 'pending' && t.priority === 'High') ||
+    recentTasks.find((t) => t.taskStatus === 'pending') ||
+    recentTasks[0]
+  const aiSuggestionsCount = isLogin ? Math.max(0, Math.min(10, Math.ceil((pendingCount + highPriorityCount) / 3))) : 0
+  const productivityLabel = pendingCount <= 3 ? 'High' : pendingCount <= 7 ? 'Medium' : 'Low'
+  const focusScore = Math.max(50, 100 - pendingCount * 4 - overdueCount * 5)
+  const summaryText = isLogin
+    ? recentTasks.length === 0
+      ? 'You have no tasks yet. Add a task to see your live summary and priorities.'
+      : `You have ${pendingCount} pending task${pendingCount !== 1 ? 's' : ''}, ${dueTodayCount} due today, and ${overdueCount} overdue task${overdueCount !== 1 ? 's' : ''}. ${topTask ? `Next focus: “${topTask.title}”${topTask.dueDate ? ` due ${topTask.dueDate}` : ''}.` : ''}`
+    : 'Log in to view your live task summary.'
+
+  const overviewCards = [
+    {
+      label: 'Pending Tasks',
+      value: pendingCount,
+      icon: '⏰',
+      bg: 'bg-orange-500/10',
+      border: 'border-orange-500/20',
+      iconBg: 'bg-orange-500/20',
+      textColor: 'text-orange-500',
+      valueColor: 'text-orange-300',
+    },
+    {
+      label: 'Completed Today',
+      value: completedTodayCount,
+      icon: '✅',
+      bg: 'bg-green-500/10',
+      border: 'border-green-500/20',
+      iconBg: 'bg-green-500/20',
+      textColor: 'text-green-400',
+      valueColor: 'text-green-300',
+    },
+    {
+      label: 'Due This Week',
+      value: upcomingCount,
+      icon: '📅',
+      bg: 'bg-blue-500/10',
+      border: 'border-blue-500/20',
+      iconBg: 'bg-blue-500/20',
+      textColor: 'text-blue-400',
+      valueColor: 'text-blue-300',
+    },
+    {
+      label: 'High Priority',
+      value: highPriorityCount,
+      icon: '🔥',
+      bg: 'bg-red-500/10',
+      border: 'border-red-500/20',
+      iconBg: 'bg-red-500/20',
+      textColor: 'text-red-400',
+      valueColor: 'text-red-300',
+    },
+  ]
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -153,24 +178,17 @@ function Dashboard() {
                 </span>
               </div>
               <p className="text-slate-300 leading-relaxed text-xs">
-                You have a <span className="text-orange-400 font-semibold">productive day ahead</span>. 
-                Your top priority is the Q4 financial report review — I've pre-loaded the latest data 
-                for you. The auth module PR has been waiting 18 hours; I recommend addressing it before 
-                your 2pm standup. Based on your patterns, your{' '}
-                <span className="text-indigo-400 font-semibold">peak focus window</span> is 9–11am — 
-                I've blocked that time for deep work. You're on track to complete{' '}
-                <span className="text-green-400 font-semibold">87% of this week's goals</span>. 
-                Three low-priority tasks can be safely deferred to next week without impact.
+                {summaryText}
               </p>
               <div className="mt-2 flex flex-wrap gap-1">
                 <span className="text-xs bg-slate-800 text-slate-400 border border-slate-700 px-2 py-0.5 rounded-full">
-                  📈 Productivity: High
+                  📈 Productivity: {productivityLabel}
                 </span>
                 <span className="text-xs bg-slate-800 text-slate-400 border border-slate-700 px-2 py-0.5 rounded-full">
-                  🎯 Focus Score: 92/100
+                  🎯 Focus Score: {focusScore}
                 </span>
                 <span className="text-xs bg-slate-800 text-slate-400 border border-slate-700 px-2 py-0.5 rounded-full">
-                  ⚡ 3 automations running
+                  ⚡ {aiSuggestionsCount} AI suggestions
                 </span>
               </div>
             </div>

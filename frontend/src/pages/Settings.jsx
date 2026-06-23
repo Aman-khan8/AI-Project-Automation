@@ -8,33 +8,13 @@ const INITIAL = {
   role: 'Product Manager',
   avatar: 'AJ',
 
-  // Notifications
-  notif: {
-    emailDigest: true,
-    taskReminders: true,
-    aiSuggestions: true,
-    weeklyReport: false,
-    slackIntegration: false,
-    browserPush: true,
-  },
-
-  // Working hours
-  workStart: '09:00',
-  workEnd: '18:00',
-  workDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
-
   // Timezone
   timezone: 'America/New_York',
 
   // Theme
   theme: 'dark',
-  accentColor: 'indigo',
+ accentColor: 'indigo',
 
-  // AI preferences
-  aiVerbosity: 'balanced',
-  autoSchedule: true,
-  smartPriority: true,
-  dailySummary: true,
 }
 
 const TIMEZONES = [
@@ -159,10 +139,7 @@ function Toast({ show }) {
 // ─── Sidebar nav ──────────────────────────────────────────────────────────────
 const SECTIONS = [
   { id: 'profile',       icon: '👤', label: 'Profile' },
-  { id: 'notifications', icon: '🔔', label: 'Notifications' },
-  { id: 'schedule',      icon: '🕐', label: 'Working Hours' },
   { id: 'theme',         icon: '🎨', label: 'Appearance' },
-  { id: 'ai',            icon: '🤖', label: 'AI Preferences' },
   { id: 'danger',        icon: '⚠️',  label: 'Danger Zone' },
 ]
 
@@ -266,113 +243,7 @@ export default function Settings() {
               </SectionCard>
             )}
 
-            {/* NOTIFICATIONS */}
-            {activeSection === 'notifications' && (
-              <SectionCard icon="🔔" title="Notifications" subtitle="Choose what you want to be notified about">
-                <Toggle
-                  checked={prefs.notif.taskReminders}
-                  onChange={(v) => setNotif('taskReminders', v)}
-                  label="Task Reminders"
-                  description="Get notified 15 minutes before a task is due"
-                />
-                <div className="border-t border-slate-700/40" />
-                <Toggle
-                  checked={prefs.notif.emailDigest}
-                  onChange={(v) => setNotif('emailDigest', v)}
-                  label="Daily Email Digest"
-                  description="Receive a morning summary of today's tasks"
-                />
-                <div className="border-t border-slate-700/40" />
-                <Toggle
-                  checked={prefs.notif.aiSuggestions}
-                  onChange={(v) => setNotif('aiSuggestions', v)}
-                  label="AI Suggestions"
-                  description="Let AI proactively suggest task optimisations"
-                />
-                <div className="border-t border-slate-700/40" />
-                <Toggle
-                  checked={prefs.notif.weeklyReport}
-                  onChange={(v) => setNotif('weeklyReport', v)}
-                  label="Weekly Productivity Report"
-                  description="Receive a detailed report every Friday at 5pm"
-                />
-                <div className="border-t border-slate-700/40" />
-                <Toggle
-                  checked={prefs.notif.browserPush}
-                  onChange={(v) => setNotif('browserPush', v)}
-                  label="Browser Push Notifications"
-                  description="Show desktop notifications even when the tab is in background"
-                />
-                <div className="border-t border-slate-700/40" />
-                <Toggle
-                  checked={prefs.notif.slackIntegration}
-                  onChange={(v) => setNotif('slackIntegration', v)}
-                  label="Slack Integration"
-                  description="Send task updates to your connected Slack workspace"
-                />
-              </SectionCard>
-            )}
-
-            {/* WORKING HOURS */}
-            {activeSection === 'schedule' && (
-              <SectionCard icon="🕐" title="Working Hours" subtitle="Define when you're available for tasks and meetings">
-                {/* Work days */}
-                <Field label="Working Days">
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {WEEK_DAYS.map((day) => {
-                      const active = prefs.workDays.includes(day)
-                      return (
-                        <button
-                          key={day}
-                          onClick={() => toggleWorkDay(day)}
-                          className={`w-12 h-10 rounded-xl text-sm font-semibold transition-all duration-150 border ${
-                            active
-                              ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-500/20'
-                              : 'bg-slate-800/60 border-slate-700/50 text-slate-400 hover:border-slate-600 hover:text-white'
-                          }`}
-                        >
-                          {day}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </Field>
-
-                {/* Time range */}
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <Field label="Start Time">
-                    <input
-                      type="time"
-                      value={prefs.workStart}
-                      onChange={(e) => set('workStart', e.target.value)}
-                      className="w-full bg-slate-900/60 border border-slate-600/50 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all [color-scheme:dark]"
-                    />
-                  </Field>
-                  <Field label="End Time">
-                    <input
-                      type="time"
-                      value={prefs.workEnd}
-                      onChange={(e) => set('workEnd', e.target.value)}
-                      className="w-full bg-slate-900/60 border border-slate-600/50 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all [color-scheme:dark]"
-                    />
-                  </Field>
-                </div>
-
-                {/* Visual summary */}
-                <div className="bg-slate-900/40 border border-slate-700/40 rounded-xl px-4 py-3 flex items-center gap-3">
-                  <span className="text-2xl">🗓️</span>
-                  <div>
-                    <p className="text-white text-sm font-semibold">
-                      {prefs.workDays.join(', ')}
-                    </p>
-                    <p className="text-slate-400 text-xs mt-0.5">
-                      {prefs.workStart} – {prefs.workEnd} · {prefs.timezone.replace('_', ' ')}
-                    </p>
-                  </div>
-                </div>
-              </SectionCard>
-            )}
-
+          
             {/* APPEARANCE */}
             {activeSection === 'theme' && (
               <SectionCard icon="🎨" title="Appearance" subtitle="Customise how TaskAI looks">
@@ -441,56 +312,7 @@ export default function Settings() {
               </SectionCard>
             )}
 
-            {/* AI PREFERENCES */}
-            {activeSection === 'ai' && (
-              <SectionCard icon="🤖" title="AI Preferences" subtitle="Control how the AI assistant behaves">
-                <Toggle
-                  checked={prefs.autoSchedule}
-                  onChange={(v) => set('autoSchedule', v)}
-                  label="Auto-Schedule Tasks"
-                  description="AI automatically finds the best time slot for new tasks based on your calendar"
-                />
-                <div className="border-t border-slate-700/40" />
-                <Toggle
-                  checked={prefs.smartPriority}
-                  onChange={(v) => set('smartPriority', v)}
-                  label="Smart Priority Suggestions"
-                  description="AI re-ranks your task list based on deadlines, dependencies, and impact"
-                />
-                <div className="border-t border-slate-700/40" />
-                <Toggle
-                  checked={prefs.dailySummary}
-                  onChange={(v) => set('dailySummary', v)}
-                  label="Daily AI Summary"
-                  description="Generate a personalised morning briefing every day at your work start time"
-                />
-                <div className="border-t border-slate-700/40" />
-
-                <Field label="AI Response Style">
-                  <div className="grid grid-cols-3 gap-3 mt-1">
-                    {[
-                      { id: 'concise',   icon: '⚡', label: 'Concise', desc: 'Short & direct' },
-                      { id: 'balanced',  icon: '⚖️',  label: 'Balanced', desc: 'Default' },
-                      { id: 'detailed',  icon: '📝', label: 'Detailed', desc: 'Full context' },
-                    ].map((v) => (
-                      <button
-                        key={v.id}
-                        onClick={() => set('aiVerbosity', v.id)}
-                        className={`flex flex-col items-center gap-1 py-3 rounded-xl border text-sm transition-all duration-150 ${
-                          prefs.aiVerbosity === v.id
-                            ? 'border-indigo-500/60 bg-indigo-500/10 text-indigo-300'
-                            : 'border-slate-700/50 bg-slate-800/30 text-slate-400 hover:border-slate-600 hover:text-white'
-                        }`}
-                      >
-                        <span className="text-xl">{v.icon}</span>
-                        <span className="font-semibold">{v.label}</span>
-                        <span className="text-xs opacity-60">{v.desc}</span>
-                      </button>
-                    ))}
-                  </div>
-                </Field>
-              </SectionCard>
-            )}
+          
 
             {/* DANGER ZONE */}
             {activeSection === 'danger' && (

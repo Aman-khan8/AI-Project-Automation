@@ -15,10 +15,17 @@ async function AIAnalysis(req,res) {
       model: 'gemini-2.5-flash', // fast and perfect for text/summaries
       contents: process.env.AI_PROMPT + prompt+tasks,
     });
-    if(response && response.results && response.results.length > 0) {
-        return res.status(200).json(
-              new ApiResponse(200, "Success", null, response.results[0].text)
-            );
+    const aiText = response?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (aiText) {
+      return res.status(200).json(
+        new ApiResponse(200, "Success", null, aiText)
+      )}
+    else{
+      console.log("response",response);
+      return res.status(500).json(
+        new ApiResponse(500, "Failed", "No response from AI")
+      );
     }
   } catch (error) {
    
@@ -27,6 +34,7 @@ async function AIAnalysis(req,res) {
     );
   }
 }
+
 
 
 

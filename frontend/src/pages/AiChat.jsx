@@ -1,74 +1,26 @@
 import { useState, useRef, useEffect } from 'react'
+import { useSelector } from 'react-redux'
+import axios from 'axios'
 
-// ─── Mock AI parser ───────────────────────────────────────────────────────────
-const COMMANDS = [
-  {
-    match: /add task[:\s]+(.+?)(?:\s+by\s+(.+))?$/i,
-    handler: (m) => ({
-      type: 'task_added',
-      task: { name: m[1].trim(), due: m[2] ? m[2].trim() : null, priority: 'Medium', status: 'pending' },
-      reply: `✅ Task added: **${m[1].trim()}**${m[2] ? ` — due **${m[2].trim()}**` : ''}`,
-    }),
-  },
-  {
-    match: /show (tasks|my tasks|all tasks)/i,
-    handler: () => ({
-      type: 'show_tasks',
-      reply: '📋 Here are your current tasks:',
-      tasks: [
-        { name: 'Prepare Q4 financial report', priority: 'High', status: 'in-progress', due: '2026-05-15' },
-        { name: 'Review pull requests', priority: 'High', status: 'pending', due: '2026-05-12' },
-        { name: 'Update team documentation', priority: 'Medium', status: 'pending', due: '2026-05-20' },
-        { name: 'Optimize database queries', priority: 'Low', status: 'in-progress', due: '2026-05-28' },
-      ],
-    }),
-  },
-  {
-    match: /schedule|calendar|upcoming/i,
-    handler: () => ({
-      type: 'schedule',
-      reply: '📅 You have **5 events** this week. Your busiest day is **Wednesday** with 3 overlapping tasks. I\'ve flagged 2 scheduling conflicts for your review.',
-    }),
-  },
-  {
-    match: /summar(y|ize)|how am i doing|progress/i,
-    handler: () => ({
-      type: 'summary',
-      reply: '📊 **Weekly Summary:** You\'ve completed **8 tasks** this week (↑23% vs last week). Your productivity score is **92/100**. Top focus area: Engineering. 3 tasks are overdue — want me to reschedule them?',
-    }),
-  },
-  {
-    match: /priorit(y|ize)|what should i (do|work on)/i,
-    handler: () => ({
-      type: 'priority',
-      reply: '🎯 Based on deadlines and impact, I recommend:\n1. **Q4 financial report** — due in 2 days, high impact\n2. **Auth module PR review** — blocking 2 teammates\n3. **Team documentation** — low effort, quick win\n\nShall I block focus time for these?',
-    }),
-  },
-  {
-    match: /hello|hi|hey|good morning|good afternoon/i,
-    handler: () => ({
-      type: 'greeting',
-      reply: '👋 Hey Alex! I\'m your AI task assistant. You can tell me things like:\n- *"Add task: finish report by Friday"*\n- *"Show my tasks"*\n- *"What should I work on?"*\n- *"Summarize my week"*',
-    }),
-  },
-  {
-    match: /help|what can you do/i,
-    handler: () => ({
-      type: 'help',
-      reply: '🤖 Here\'s what I can do:\n\n**Tasks** — *"Add task: [name] by [date]"*\n**View** — *"Show my tasks"*\n**Schedule** — *"Show my calendar"*\n**Priority** — *"What should I work on?"*\n**Summary** — *"Summarize my week"*',
-    }),
-  },
-]
+const API_BASE = import.meta.env.VITE_API_URL
 
-function parseCommand(input) {
-  for (const cmd of COMMANDS) {
-    const m = input.match(cmd.match)
-    if (m) return cmd.handler(m)
-  }
-  return {
-    type: 'unknown',
-    reply: `🤔 I'm not sure how to handle that yet. Try saying *"Add task: finish report by Friday"* or *"Show my tasks"*. Type **help** to see all commands.`,
-  }
+const normalizeTask = (task) => ({
+  id: task._id || task.id,
+  name: task.title || task.name || '',
+  description: task.description || '',
+  dueDate: task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 10) : task.date || '',
+  status: task.taskStatus || task.status || 'pending',
+  priority: task.Priority || task.priority || 'Medium',
+})
+
+const buildTasksSummary = (tasks) => {
+  if (!tasks || tasks.length === 0) return 'No tasks currently assigned.'
+  return tasks
+    .map(
+      (task) =>
+        `Task: ${task.name} | Due: ${task.dueDate || 'No date'} | Status: ${task.status} | Priority: ${task.priority}`
+    )
+    .join('\n')
 }
 
 // ─── Priority / Status colours ────────────────────────────────────────────────
@@ -251,8 +203,12 @@ function AiChat() {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
+  const [tasks, setTasks] = useState([])
+  const [taskLoading, setTaskLoading] = useState(false)
+  const [error, setError] = useState(null)
   const bottomRef = useRef(null)
   const inputRef = useRef(null)
+  const isLogin = useSelector((state) => state.login.login)
 
   const now = () =>
     new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
@@ -267,47 +223,125 @@ function AiChat() {
     return () => window.removeEventListener('chat-suggestion', handler)
   }, [])
 
+  useEffect(() => {
+    const fetchTasks = async () => {
+      setTaskLoading(true)
+      try {
+        const res = await axios.get(`${API_BASE}/tasks/fetchTasks`, { withCredentials: true })
+        if (res.data?.statuscode === 200) {
+          setTasks((res.data.data || []).map(normalizeTask))
+        } else {
+          setTasks([])
+        }
+      } catch (err) {
+        console.error('Error fetching tasks:', err)
+        setTasks([])
+      } finally {
+        setTaskLoading(false)
+      }
+    }
+
+    if (isLogin) {
+      fetchTasks()
+    } else {
+      setTasks([])
+    }
+  }, [isLogin])
+
   // Auto-scroll
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isTyping])
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     const text = input.trim()
     if (!text) return
+    if (!isLogin) {
+      setError('Please log in to use AI chat.')
+      return
+    }
 
     const userMsg = { id: Date.now(), role: 'user', text, time: now() }
-
-    // Optimistic UI — user message appears instantly
     setMessages((prev) => [...prev, userMsg])
     setInput('')
+    setError(null)
     setIsTyping(true)
 
-    const result = parseCommand(text)
+    const addMatch = text.match(/add task[:\s]+(.+?)(?:\s+by\s+(.+))?$/i)
+    if (addMatch) {
+      const title = addMatch[1].trim()
+      const dueDate = addMatch[2] ? addMatch[2].trim() : new Date().toISOString().slice(0, 10)
+      const payload = {
+        title,
+        description: title,
+        dueDate,
+        taskStatus: 'pending',
+        Priority: 'Medium',
+      }
 
-    // Simulate AI latency (skeleton/typing indicator shown during this time)
-    const delay = result.type === 'show_tasks' ? 1200 : 800
-    setTimeout(() => {
-      setIsTyping(false)
+      try {
+        const res = await axios.post(`${API_BASE}/tasks/addTask`, payload, {
+          withCredentials: true,
+        })
+
+        if (res.data?.statuscode === 200 && res.data.data?.createTask) {
+          const newTask = normalizeTask(res.data.data.createTask)
+          setTasks((prev) => [...prev, newTask])
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now() + 1,
+              role: 'ai',
+              text: `✅ Task added: **${title}**${dueDate ? ` — due ${dueDate}` : ''}`,
+              time: now(),
+              data: { type: 'task_added' },
+            },
+          ])
+        } else {
+          throw new Error(res.data?.message || 'Unable to add task')
+        }
+      } catch (err) {
+        console.error('Add task failed:', err)
+        setError('Could not add task. Please try again.')
+      } finally {
+        setIsTyping(false)
+      }
+
+      return
+    }
+
+    try {
+      const res = await axios.post(
+        `${API_BASE}/ai/chat`,
+        { prompt: text, tasks: buildTasksSummary(tasks) },
+        { withCredentials: true }
+      )
+
+      const reply = res.data?.data || 'Sorry, I could not get a response from the AI.'
+      const needsTasks = /(show (tasks|my tasks|all tasks)|schedule|calendar|upcoming)/i.test(text)
       const aiMsg = {
         id: Date.now() + 1,
         role: 'ai',
-        text: result.reply,
+        text: reply,
         time: now(),
-        data: result,
-        optimistic: result.type === 'task_added',
+        data: needsTasks ? { tasks } : undefined,
       }
       setMessages((prev) => [...prev, aiMsg])
-
-      // Mark optimistic as confirmed after short delay
-      if (result.type === 'task_added') {
-        setTimeout(() => {
-          setMessages((prev) =>
-            prev.map((m) => (m.id === aiMsg.id ? { ...m, optimistic: false } : m))
-          )
-        }, 1500)
-      }
-    }, delay)
+    } catch (err) {
+      console.error('AI request failed:', err)
+      setError('AI request failed. Please try again.')
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          role: 'ai',
+          text: 'Sorry, I could not process that request.',
+          time: now(),
+        },
+      ])
+    } finally {
+      setIsTyping(false)
+    }
   }
 
   const handleKey = (e) => {
@@ -375,7 +409,7 @@ function AiChat() {
             />
             <button
               onClick={sendMessage}
-              disabled={!input.trim() || isTyping}
+              disabled={!input.trim() || isTyping || !isLogin}
               className="shrink-0 w-9 h-9 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl flex items-center justify-center transition-colors"
             >
               <svg className="w-4 h-4 text-white rotate-90" fill="currentColor" viewBox="0 0 20 20">
@@ -386,6 +420,11 @@ function AiChat() {
           <p className="text-xs text-slate-600 mt-2 text-center">
             Press <kbd className="bg-slate-800 border border-slate-700 px-1.5 py-0.5 rounded text-slate-400">Enter</kbd> to send · <kbd className="bg-slate-800 border border-slate-700 px-1.5 py-0.5 rounded text-slate-400">Shift+Enter</kbd> for new line
           </p>
+          {!isLogin && (
+            <p className="text-xs text-amber-300 mt-2 text-center">
+              Log in to use AI chat and access your real task list.
+            </p>
+          )}
         </div>
 
       </div>

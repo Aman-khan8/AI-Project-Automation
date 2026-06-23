@@ -1,17 +1,26 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import axios from 'axios'
+import { useSelector } from 'react-redux'
 
-const MOCK_AI_RESPONSE = {
-  title: 'Team Meeting — Every Monday 9am',
-  breakdown: [
-    { step: 1, action: 'Create recurring calendar event every Monday at 9:00 AM' },
-    { step: 2, action: 'Send automated invites to all team members' },
-    { step: 3, action: 'Set reminder notifications 15 minutes before' },
-    { step: 4, action: 'Auto-generate agenda template from previous meeting notes' },
-    { step: 5, action: 'Post meeting summary to Slack #team channel after completion' },
-  ],
-  estimatedTime: '2 minutes to set up',
-  confidence: '97%',
+const API_BASE = import.meta.env.VITE_API_URL
+
+const normalizeTask = (task) => ({
+  id: task._id || task.id,
+  title: task.title || task.name || '',
+  dueDate: task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 10) : '',
+  status: task.taskStatus || task.status || 'pending',
+  priority: task.Priority || task.priority || 'Medium',
+})
+
+const buildTasksSummary = (tasks) => {
+  if (!tasks || tasks.length === 0) return 'No tasks currently assigned.'
+  return tasks
+    .map(
+      (task) =>
+        `Task: ${task.title} | Due: ${task.dueDate || 'No date'} | Status: ${task.status} | Priority: ${task.priority}`
+    )
+    .join('\n')
 }
 
 const features = [
@@ -40,18 +49,62 @@ const stats = [
 
 function LandingPage() {
   const [prompt, setPrompt] = useState('')
-  const [aiResponse, setAiResponse] = useState(null)
+  const [aiResponse, setAiResponse] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
+  const [tasks, setTasks] = useState([])
+  const [error, setError] = useState(null)
+  const isLogin = useSelector((state) => state.login.login)
   const navigate = useNavigate()
 
-  const handleGenerate = () => {
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        const res = await axios.get(`${API_BASE}/tasks/fetchTasks`, { withCredentials: true })
+        if (res.data?.statuscode === 200) {
+          setTasks((res.data.data || []).map(normalizeTask))
+        } else {
+          setTasks([])
+        }
+      } catch (err) {
+        console.error('Error loading tasks for AI context:', err)
+        setTasks([])
+      }
+    }
+
+    if (isLogin) fetchTasks()
+    else setTasks([])
+  }, [isLogin])
+
+  const handleGenerate = async () => {
     if (!prompt.trim()) return
+    if (!isLogin) {
+      setError('Please log in to use AI task generation.')
+      return
+    }
+
     setIsGenerating(true)
-    setAiResponse(null)
-    setTimeout(() => {
-      setAiResponse(MOCK_AI_RESPONSE)
+    setAiResponse('')
+    setError(null)
+
+    try {
+      const tasksSummary = buildTasksSummary(tasks)
+      const res = await axios.post(
+        `${API_BASE}/ai/chat`,
+        { prompt, tasks: tasksSummary },
+        { withCredentials: true }
+      )
+
+      if (res.data?.statuscode === 200) {
+        setAiResponse(res.data.data || 'No response returned from AI.')
+      } else {
+        setError('AI service returned an error. Please try again.')
+      }
+    } catch (err) {
+      console.error('AI request failed:', err)
+      setError('AI request failed. Please try again later.')
+    } finally {
       setIsGenerating(false)
-    }, 1400)
+    }
   }
 
   return (
@@ -103,28 +156,27 @@ function LandingPage() {
                 )}
               </button>
             </div>
-
-            {/* AI Response */}
+            {!isLogin && (
+              <p className="text-xs text-amber-300 mt-3">
+                Log in to use AI-powered task generation and calendar-aware suggestions.
+              </p>
+            )}
             {aiResponse && (
               <div className="mt-5 border-t border-slate-700/50 pt-5">
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="text-green-400 text-sm font-semibold">✅ AI Task Breakdown Ready</span>
-                  <span className="text-xs bg-green-500/10 text-green-400 border border-green-500/20 px-2 py-0.5 rounded-full">
-                    {aiResponse.confidence} confidence
+                  <span className="text-green-400 text-sm font-semibold">✅ AI generated response</span>
+                  <span className="text-xs text-slate-500">
+                    {tasks.length} task{tasks.length !== 1 ? 's' : ''} loaded
                   </span>
                 </div>
-                <h4 className="text-white font-semibold mb-3">{aiResponse.title}</h4>
-                <ul className="space-y-2">
-                  {aiResponse.breakdown.map((item) => (
-                    <li key={item.step} className="flex items-start gap-3 text-sm text-slate-300">
-                      <span className="shrink-0 w-5 h-5 bg-indigo-500/20 text-indigo-400 rounded-full flex items-center justify-center text-xs font-bold">
-                        {item.step}
-                      </span>
-                      {item.action}
-                    </li>
-                  ))}
-                </ul>
-                <p className="text-xs text-slate-500 mt-3">⏱ Estimated setup: {aiResponse.estimatedTime}</p>
+                <div className="whitespace-pre-wrap text-slate-200 text-sm leading-relaxed">
+                  {aiResponse}
+                </div>
+              </div>
+            )}
+            {error && (
+              <div className="mt-4 text-sm text-rose-400">
+                {error}
               </div>
             )}
           </div>
